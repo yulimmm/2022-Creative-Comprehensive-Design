@@ -6,6 +6,7 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 ros::Publisher cmd_vel_publisher;
@@ -16,7 +17,7 @@ void right();
 void up();
 void down();
 void left();
-void pose_callback(const geometry_msgs::PoseWithCovarianceStamped data);
+void pose_callback(const nav_msgs::Odometry data);
 void correction(double current_ori_z);
 
 double current_x;
@@ -38,7 +39,8 @@ int main(int argc, char** argv){
   move_base_msgs::MoveBaseGoal goal;
   geometry_msgs::Twist cmd_vel;
   cmd_vel_publisher = n.advertise<geometry_msgs::Twist>("/cmd_vel",100,true);
-  ros::Subscriber pose_sub = n.subscribe("/amcl_pose",10, pose_callback);
+  //ros::Subscriber pose_sub = n.subscribe("/amcl_pose",10, pose_callback);
+  ros::Subscriber pose_sub = n.subscribe("/odom",10, pose_callback);
   ros::Subscriber min_distance_sub = n.subscribe("/min_distance",10, callback);
 
   ros::spin();
@@ -46,11 +48,11 @@ int main(int argc, char** argv){
   return 0;
 }
 
-void pose_callback(const geometry_msgs::PoseWithCovarianceStamped data)
+void pose_callback(const nav_msgs::Odometry data)
 {
   current_x = data.pose.pose.position.x;
   current_y = data.pose.pose.position.y;
-  current_or_z = data.pose.pose.orientation.z;
+  current_ori_z = data.pose.pose.orientation.z;
 }
 
 void turn_right()
@@ -81,6 +83,7 @@ void turn_right()
 
   ac.waitForResult();
 
+  ROS_INFO("current_ori_z: %lf ",current_ori_z);
   correction(current_ori_z);
 
   if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
@@ -227,7 +230,7 @@ void callback(const std_msgs::Float32 msg)
   geometry_msgs::Twist cmd_vel;
 //  ROS_INFO("go! result = %f\n",msg.data);
 
-  if(msg.data>30){
+  if(msg.data>50){
     ROS_INFO("go! distance = %f\n",msg.data);
 
     cmd_vel.linear.x=0.1;
@@ -247,7 +250,7 @@ void callback(const std_msgs::Float32 msg)
 
 void correction(double current_ori_z)
 {
-  if(current_ori_Z<0.35&&current_ori_z>-0.35){
+  if(current_ori_z<0.35&&current_ori_z>-0.35){
     up();
   }
   if(current_ori_z<-0.35&&current_ori_z>-0.85){
