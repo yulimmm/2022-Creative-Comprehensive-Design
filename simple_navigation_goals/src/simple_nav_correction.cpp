@@ -12,14 +12,16 @@ ros::Publisher cmd_vel_publisher;
 
 void turn_right();
 void callback(const std_msgs::Float32 msg);
-void turn_straight();
-void turn_down();
-void turn_left();
+void right();
+void up();
+void down();
+void left();
 void pose_callback(const geometry_msgs::PoseWithCovarianceStamped data);
+void correction(double current_ori_z);
 
 double current_x;
 double current_y;
-double current_or_z;
+double current_ori_z;
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "simple_navigation_goals");
@@ -37,13 +39,9 @@ int main(int argc, char** argv){
   geometry_msgs::Twist cmd_vel;
   cmd_vel_publisher = n.advertise<geometry_msgs::Twist>("/cmd_vel",100,true);
   ros::Subscriber pose_sub = n.subscribe("/amcl_pose",10, pose_callback);
-  //ros::Subscriber min_distance_sub = n.subscribe("/min_distance",10, callback);
+  ros::Subscriber min_distance_sub = n.subscribe("/min_distance",10, callback);
 
-  //ros::spin();
-  turn_straight();  //0 1
-  turn_right(); //-0.7 0.7
-  turn_down();  //-1 0
-  turn_left();  //0.7 0.7
+  ros::spin();
 
   return 0;
 }
@@ -55,8 +53,142 @@ void pose_callback(const geometry_msgs::PoseWithCovarianceStamped data)
   current_or_z = data.pose.pose.orientation.z;
 }
 
-
 void turn_right()
+{
+  //tell the action client that we want to spin a thread by default
+  MoveBaseClient ac("move_base", true);
+
+  //wait for the action server to come up
+  while(!ac.waitForServer(ros::Duration(5.0))){
+    ROS_INFO("Waiting for the move_base action server to come up");
+  }
+
+  move_base_msgs::MoveBaseGoal goal;
+  goal.target_pose.header.frame_id = "base_link";
+  goal.target_pose.header.stamp = ros::Time::now();
+
+
+  goal.target_pose.pose.position.x = current_x; 
+  goal.target_pose.pose.position.y = current_y;
+  
+  goal.target_pose.pose.orientation.x = 0; 
+  goal.target_pose.pose.orientation.y = 0;
+  goal.target_pose.pose.orientation.z = -0.7; 
+  goal.target_pose.pose.orientation.w = 0.7; 
+
+  ROS_INFO("Sending goal");
+  ac.sendGoal(goal);
+
+  ac.waitForResult();
+
+  correction(current_ori_z);
+
+  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    ROS_INFO("Hooray, the base turned right");
+  else
+    ROS_INFO("The base failed to turn left for some reason");
+}
+
+void up()
+{
+  //tell the action client that we want to spin a thread by default
+  MoveBaseClient ac("move_base", true);
+
+  //wait for the action server to come up
+  while(!ac.waitForServer(ros::Duration(5.0))){
+    ROS_INFO("Waiting for the move_base action server to come up");
+  }
+
+  move_base_msgs::MoveBaseGoal goal;
+  goal.target_pose.header.frame_id = "base_link";
+  goal.target_pose.header.stamp = ros::Time::now();
+
+  goal.target_pose.pose.position.x = current_x; 
+  goal.target_pose.pose.position.y = current_y;
+
+  goal.target_pose.pose.orientation.x = 0; 
+  goal.target_pose.pose.orientation.y = 0; 
+  goal.target_pose.pose.orientation.z = 0; 
+  goal.target_pose.pose.orientation.w = 1; 
+
+  ROS_INFO("Sending goal");
+  ac.sendGoal(goal);
+
+  ac.waitForResult();
+
+  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    ROS_INFO("Hooray, the base turned straight");
+  else
+    ROS_INFO("The base failed to turn left for some reason");
+}
+
+void down()
+{
+  //tell the action client that we want to spin a thread by default
+  MoveBaseClient ac("move_base", true);
+
+  //wait for the action server to come up
+  while(!ac.waitForServer(ros::Duration(5.0))){
+    ROS_INFO("Waiting for the move_base action server to come up");
+  }
+
+  move_base_msgs::MoveBaseGoal goal;
+  goal.target_pose.header.frame_id = "base_link";
+  goal.target_pose.header.stamp = ros::Time::now();
+
+  goal.target_pose.pose.position.x = current_x; 
+  goal.target_pose.pose.position.y = current_y;
+
+  goal.target_pose.pose.orientation.x = 0; 
+  goal.target_pose.pose.orientation.y = 0; 
+  goal.target_pose.pose.orientation.z = -1; 
+  goal.target_pose.pose.orientation.w = 0; 
+
+  ROS_INFO("Sending goal");
+  ac.sendGoal(goal);
+
+  ac.waitForResult();
+
+  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    ROS_INFO("Hooray, the base turned down");
+  else
+    ROS_INFO("The base failed to turn left for some reason");
+}
+
+void left()
+{
+  //tell the action client that we want to spin a thread by default
+  MoveBaseClient ac("move_base", true);
+
+  //wait for the action server to come up
+  while(!ac.waitForServer(ros::Duration(5.0))){
+    ROS_INFO("Waiting for the move_base action server to come up");
+  }
+
+  move_base_msgs::MoveBaseGoal goal;
+  goal.target_pose.header.frame_id = "base_link";
+  goal.target_pose.header.stamp = ros::Time::now();
+
+  goal.target_pose.pose.position.x = current_x; 
+  goal.target_pose.pose.position.y = current_y;
+
+  goal.target_pose.pose.orientation.x = 0; 
+  goal.target_pose.pose.orientation.y = 0; 
+  goal.target_pose.pose.orientation.z = 0.7; 
+  goal.target_pose.pose.orientation.w = 0.7; 
+
+  ROS_INFO("Sending goal");
+  ac.sendGoal(goal);
+
+  ac.waitForResult();
+
+  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    ROS_INFO("Hooray, the base turned left");
+  else
+    ROS_INFO("The base failed to turn left for some reason");
+}
+
+void right()
 {
   //tell the action client that we want to spin a thread by default
   MoveBaseClient ac("move_base", true);
@@ -90,105 +222,6 @@ void turn_right()
     ROS_INFO("The base failed to turn left for some reason");
 }
 
-void turn_straight()
-{
-  //tell the action client that we want to spin a thread by default
-  MoveBaseClient ac("move_base", true);
-
-  //wait for the action server to come up
-  while(!ac.waitForServer(ros::Duration(5.0))){
-    ROS_INFO("Waiting for the move_base action server to come up");
-  }
-
-  move_base_msgs::MoveBaseGoal goal;
-  goal.target_pose.header.frame_id = "base_link";
-  goal.target_pose.header.stamp = ros::Time::now();
-
-  goal.target_pose.pose.position.x = current_x; 
-  goal.target_pose.pose.position.y = current_y;
-
-  goal.target_pose.pose.orientation.x = 0; 
-  goal.target_pose.pose.orientation.y = 0; 
-  goal.target_pose.pose.orientation.z = 0; 
-  goal.target_pose.pose.orientation.w = 1; 
-
-  ROS_INFO("Sending goal");
-  ac.sendGoal(goal);
-
-  ac.waitForResult();
-
-  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    ROS_INFO("Hooray, the base turned straight");
-  else
-    ROS_INFO("The base failed to turn left for some reason");
-}
-
-void turn_down()
-{
-  //tell the action client that we want to spin a thread by default
-  MoveBaseClient ac("move_base", true);
-
-  //wait for the action server to come up
-  while(!ac.waitForServer(ros::Duration(5.0))){
-    ROS_INFO("Waiting for the move_base action server to come up");
-  }
-
-  move_base_msgs::MoveBaseGoal goal;
-  goal.target_pose.header.frame_id = "base_link";
-  goal.target_pose.header.stamp = ros::Time::now();
-
-  goal.target_pose.pose.position.x = current_x; 
-  goal.target_pose.pose.position.y = current_y;
-
-  goal.target_pose.pose.orientation.x = 0; 
-  goal.target_pose.pose.orientation.y = 0; 
-  goal.target_pose.pose.orientation.z = -1; 
-  goal.target_pose.pose.orientation.w = 0; 
-
-  ROS_INFO("Sending goal");
-  ac.sendGoal(goal);
-
-  ac.waitForResult();
-
-  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    ROS_INFO("Hooray, the base turned down");
-  else
-    ROS_INFO("The base failed to turn left for some reason");
-}
-
-void turn_left()
-{
-  //tell the action client that we want to spin a thread by default
-  MoveBaseClient ac("move_base", true);
-
-  //wait for the action server to come up
-  while(!ac.waitForServer(ros::Duration(5.0))){
-    ROS_INFO("Waiting for the move_base action server to come up");
-  }
-
-  move_base_msgs::MoveBaseGoal goal;
-  goal.target_pose.header.frame_id = "base_link";
-  goal.target_pose.header.stamp = ros::Time::now();
-
-  goal.target_pose.pose.position.x = current_x; 
-  goal.target_pose.pose.position.y = current_y;
-
-  goal.target_pose.pose.orientation.x = 0; 
-  goal.target_pose.pose.orientation.y = 0; 
-  goal.target_pose.pose.orientation.z = 0.7; 
-  goal.target_pose.pose.orientation.w = 0.7; 
-
-  ROS_INFO("Sending goal");
-  ac.sendGoal(goal);
-
-  ac.waitForResult();
-
-  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    ROS_INFO("Hooray, the base turned left");
-  else
-    ROS_INFO("The base failed to turn left for some reason");
-}
-
 void callback(const std_msgs::Float32 msg)
 {
   geometry_msgs::Twist cmd_vel;
@@ -215,6 +248,18 @@ void callback(const std_msgs::Float32 msg)
 void correction(double current_ori_z)
 {
   if(current_ori_Z<0.35&&current_ori_z>-0.35){
-    
+    up();
+  }
+  if(current_ori_z<-0.35&&current_ori_z>-0.85){
+    right();
+  }
+  if(current_ori_z<-0.85&&current_ori_z>-1){
+    down();
+  }
+  if(current_ori_z<1&&current_ori_z>0.85){
+    down();
+  }
+  if(current_ori_z<0.85&&current_ori_z>0.35){
+    left();
   }
 }
