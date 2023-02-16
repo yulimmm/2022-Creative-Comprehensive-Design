@@ -6,6 +6,7 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 ros::Publisher cmd_vel_publisher;
@@ -40,7 +41,9 @@ int main(int argc, char** argv){
   move_base_msgs::MoveBaseGoal goal;
   geometry_msgs::Twist cmd_vel;
   cmd_vel_publisher = n.advertise<geometry_msgs::Twist>("/cmd_vel",100,true);
-  //ros::Subscriber pose_sub = n.subscribe("/amcl_pose",10, pose_callback);
+
+
+
   ros::Subscriber pose_sub = n.subscribe("/t265/odom/sample",10, pose_callback);
   ros::Subscriber min_distance_sub = n.subscribe("/min_distance",10, callback);
 
@@ -112,7 +115,7 @@ void up()
   //goal.target_pose.pose.orientation.x = 0; 
   //goal.target_pose.pose.orientation.y = 0; 
   goal.target_pose.pose.orientation.z = 0; 
-  goal.target_pose.pose.orientation.w = 1; 
+  goal.target_pose.pose.orientation.w = 0.95; 
 
   ROS_INFO("correction Sending goal");
   ac.sendGoal(goal);
@@ -144,7 +147,7 @@ void down()
 
   //goal.target_pose.pose.orientation.x = 0; 
   //goal.target_pose.pose.orientation.y = 0; 
-  goal.target_pose.pose.orientation.z = -1; 
+  goal.target_pose.pose.orientation.z = -0.95; 
   goal.target_pose.pose.orientation.w = 0; 
 
   ROS_INFO("correction Sending goal");
