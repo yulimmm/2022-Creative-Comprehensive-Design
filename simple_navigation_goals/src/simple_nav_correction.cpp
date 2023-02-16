@@ -23,6 +23,8 @@ double current_x;
 double current_y;
 double current_ori_z;
 
+int count = 0;
+
 int main(int argc, char** argv){
   ros::init(argc, argv, "simple_navigation_goals");
   ros::NodeHandle n;
@@ -56,6 +58,8 @@ void pose_callback(const nav_msgs::Odometry data)
 
 void turn_right()
 {
+  count++;
+
   //tell the action client that we want to spin a thread by default
   MoveBaseClient ac("move_base", true);
 
@@ -81,8 +85,11 @@ void turn_right()
   else
     ROS_INFO("The base failed to turn left for some reason");
 
-  ROS_INFO("current_ori_z: %lf ",current_ori_z);
-  correction(current_ori_z);
+  //direction compensation 
+  if(count%5==0){
+    ROS_INFO("current_ori_z: %lf ",current_ori_z);
+    correction(current_ori_z);
+  }
 }
 
 void up()
