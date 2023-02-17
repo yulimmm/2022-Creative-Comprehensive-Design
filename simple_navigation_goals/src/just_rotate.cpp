@@ -13,6 +13,7 @@
 ros::Publisher cmd_vel_publisher;
 geometry_msgs::Twist cmd_vel;
 double current_x,current_y,current_ori_z;
+float laser_distance;
 
 void pose_callback(const nav_msgs::Odometry data)
 {
@@ -21,32 +22,109 @@ void pose_callback(const nav_msgs::Odometry data)
   current_ori_z = data.pose.pose.orientation.z;
 }
 
+void laser_distance_callback(const std_msgs::Float32 msg)
+{
+  laser_distance = msg.data;
+}
+
+void current_ori_z_check()
+{
+  while(1){
+    ros::spinOnce();
+    if(current_ori_z<-0.7 && current_ori_z >-0.75){
+      ROS_INFO("stop!");
+      cmd_vel.linear.x=0;
+      cmd_vel.linear.y=0;
+      cmd_vel.angular.z=0;
+      cmd_vel_publisher.publish(cmd_vel);
+      break;
+    }
+
+    else if(current_ori_z>0.7 && current_ori_z <0.75){
+      ROS_INFO("stop!");
+      cmd_vel.linear.x=0;
+      cmd_vel.linear.y=0;
+      cmd_vel.angular.z=0;
+      cmd_vel_publisher.publish(cmd_vel);
+      break;
+    }
+
+    else if(current_ori_z>0.95 && current_ori_z <1){
+      ROS_INFO("stop!");
+      cmd_vel.linear.x=0;
+      cmd_vel.linear.y=0;
+      cmd_vel.angular.z=0;
+      cmd_vel_publisher.publish(cmd_vel);
+      break;
+    }
+ 
+    else if(current_ori_z>0.0 && current_ori_z <0.1){
+      ROS_INFO("stop!");
+      cmd_vel.linear.x=0;
+      cmd_vel.linear.y=0;
+      cmd_vel.angular.z=0;
+      cmd_vel_publisher.publish(cmd_vel);
+      break;
+    }
+
+    else if(current_ori_z>-0.1 && current_ori_z <0){
+      ROS_INFO("stop!");
+      cmd_vel.linear.x=0;
+      cmd_vel.linear.y=0;
+      cmd_vel.angular.z=0;
+      cmd_vel_publisher.publish(cmd_vel);
+      break;
+    }
+
+    else if(current_ori_z>-0.95 && current_ori_z <-0.9){
+      ROS_INFO("stop!");
+      cmd_vel.linear.x=0;
+      cmd_vel.linear.y=0;
+      cmd_vel.angular.z=0;
+      cmd_vel_publisher.publish(cmd_vel);
+      break;
+    }
+
+  }
+}
+
+int rotation()
+{
+  ROS_INFO("rotate!");
+  cmd_vel.linear.x=0;
+  cmd_vel.linear.y=0;
+  cmd_vel.angular.z=-0.2;
+  cmd_vel_publisher.publish(cmd_vel);
+
+  current_ori_z_check();
+
+  return 0;
+}
+
+int go()
+{
+  ROS_INFO("go!");  
+  cmd_vel.linear.x=0.1;
+  cmd_vel.linear.y=0.1;
+  cmd_vel_publisher.publish(cmd_vel);
+}
+
 int main(int argc, char** argv){
   ros::init(argc, argv, "simple_navigation_goals");
   ros::NodeHandle n;
   cmd_vel_publisher = n.advertise<geometry_msgs::Twist>("/cmd_vel",100,true);
   ros::Subscriber pose_sub = n.subscribe("/odom",10, pose_callback);
+  ros::Subscriber min_distance_sub = n.subscribe("/min_distance",10, laser_distance_callback);
 
   while(ros::ok()){
-    ROS_INFO("%lf",current_ori_z);
+    ROS_INFO("laser_distance: %f curreent_ori_z: %lf",laser_distance,current_ori_z);
+    go();
 
-    if(current_ori_z>-0.6 && current_ori_z<-0.1){
-      ROS_INFO("right go");
-      cmd_vel.linear.x=0;
-      cmd_vel.linear.y=0;
-      cmd_vel.angular.z=-0.2;
-      cmd_vel_publisher.publish(cmd_vel);
+    if(laser_distance < 35){
+      rotation();
     }
 
-    if(current_ori_z<-0.7){
-      cmd_vel.linear.x=0;
-      cmd_vel.linear.y=0;
-      cmd_vel.angular.z=-0;
-      cmd_vel_publisher.publish(cmd_vel);
-      ROS_INFO("stop");
-    }
-    
-    ros::spinOnce();
+    ros::spinOnce(); //callback 
   }
   return 0;
 }
