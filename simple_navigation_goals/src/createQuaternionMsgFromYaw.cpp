@@ -10,12 +10,15 @@
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/Imu.h>
 #include <tf/tf.h>
+#include <geometry_msgs/PoseStamped.h>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 ros::Publisher cmd_vel_publisher;
+ros::Publisher pose_pub;
 geometry_msgs::Twist cmd_vel;
 double current_x,current_y,current_ori_z;
 float laser_distance;
+geometry_msgs::PoseStamped posestamped;
 
 void pose_callback(const nav_msgs::Odometry data)
 {
@@ -44,18 +47,17 @@ int rotation()
     ROS_INFO("Waiting for the move_base action server to come up");
   }
 
-  move_base_msgs::MoveBaseGoal goal;
-  goal.target_pose.header.frame_id = "base_link";
-  goal.target_pose.header.stamp = ros::Time::now();
 
-  goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
-  ac.sendGoal(goal);
-  ac.waitForResult();
-
-  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    ROS_INFO("Hooray, the base turned right");
-  else
-    ROS_INFO("The base failed to turn right for some reason");
+  posestamped.header.frame_id = "map";
+  posestamped.pose.position.x = current_x;
+  posestamped.pose.position.y = current_y;
+  posestamped.pose.position.z = 0;
+  
+  posestamped.pose.orientation = tf::createQuaternionMsgFromYaw(90);
+  
+  pose_pub.publish(posestamped);
+  loop_rate.sleep();
+  ROS_INFO("send goal");
 
   return 0;
 }
@@ -80,7 +82,7 @@ int main(int argc, char** argv){
   ros::Subscriber pose_sub = n.subscribe("/odom",10, pose_callback);
   ros::Subscriber min_distance_sub = n.subscribe("/min_distance",10, laser_distance_callback);
 
-  //goal.target_pose.header.frame_id = "map";
+  pose_pub = n.advertise<geometry_msgs::PoseStamped>("/pose_stamped",10);
 
   while(ros::ok()){
     ROS_INFO("laser_distance: %f curreent_ori_z: %lf",laser_distance,current_ori_z);
